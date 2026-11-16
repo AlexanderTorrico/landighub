@@ -12,6 +12,7 @@ env:
   # Carpeta del servidor donde nginx busca los archivos (la del alias)
   DESTINO: /var/www/landing
 
+  
 jobs:
   desplegar:
     # Corre en TU runner (el contenedor servidor-ubuntu), no en los servidores de GitHub
