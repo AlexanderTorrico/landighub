@@ -1,0 +1,42 @@
+name: CI/CD
+
+# En cada push a main, el runner del servidor Ubuntu prueba, compila y publica la landing en nginx.
+on:
+  push:
+    branches: [main]
+
+env:
+  # Ruta del navegador donde nginx sirve la landing: location /landing { alias /var/www/landing; }
+  # Si la sirves en la raíz del sitio, cambia esto por: /
+  BASE_URL: /landing/
+  # Carpeta del servidor donde nginx busca los archivos (la del alias)
+  DESTINO: /var/www/landing
+
+jobs:
+  desplegar:
+    # Corre en TU runner (el contenedor servidor-ubuntu), no en los servidores de GitHub
+    runs-on: self-hosted
+    steps:
+      - name: Descargar el código del repo
+        uses: actions/checkout@v7
+
+      - name: Instalar Node 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Test (si falla, no se despliega)
+        run: npm test
+
+      - name: Compilar para la ruta /landing/ (la versión es el commit corto)
+        run: VITE_APP_VERSION=${GITHUB_SHA::7} npm run build -- --base=$BASE_URL
+
+      - name: Publicar en nginx
+        run: |
+          rm -rf "$DESTINO"/*
+          cp -r dist/. "$DESTINO"/
+          echo "Publicado en $DESTINO:"
+          ls -l "$DESTINO"
